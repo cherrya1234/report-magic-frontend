@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 function App() {
   const [uploadData, setUploadData] = useState(null);
-  const [sessionId, setSessionId] = useState('');
+  const [sessionId, setSessionId] = useState(localStorage.getItem('session_id') || '');
   const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState('');
+
+  useEffect(() => {
+    if (sessionId) {
+      localStorage.setItem('session_id', sessionId);
+    }
+  }, [sessionId]);
 
   const handleUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -29,6 +35,7 @@ function App() {
       session_id: sessionId,
       question
     });
+
     setMessages([...newMsgs, { role: 'assistant', text: res.data.answer }]);
   };
 
