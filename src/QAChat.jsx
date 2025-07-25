@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+const clearHistory = async () => {
+  try {
+    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/clear`);
+    alert("Q&A history cleared.");
+  } catch (error) {
+    console.error("Failed to clear history:", error);
+  }
+};
+
 function QAChat() {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -40,8 +49,11 @@ function QAChat() {
         />
         <button type="submit" disabled={loading} style={{ marginTop: '0.5rem' }}>
           {loading ? 'Thinking...' : 'Ask'}
+        <button onClick={clearHistory} style={{ marginTop: '10px' }}>
+          🧹 Clear Q&A History  
         </button>
       </form>
+        
 
       {answer && (
         <div style={{ marginTop: '1rem', background: '#f4f4f4', padding: '1rem' }}>
