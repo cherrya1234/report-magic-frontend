@@ -38,7 +38,6 @@ function UploadForm({ setSessionId, setMessage }) {
 
   return (
     <div>
-      <h1>🧙‍♂️ Report Magician</h1>
       <form onSubmit={handleSubmit} style={{ marginBottom: '1rem' }}>
         <div>
           <label>Project Name</label><br />
