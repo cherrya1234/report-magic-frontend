@@ -1,85 +1,113 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
-const QAChat = ({ sessionId, projectName, email }) => {
-  const [question, setQuestion] = useState('');
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "https://report-magician-backend.onrender.com";
+
+export default function QAChat({ sessionId: sessionIdProp, projectName, email }) {
+  const [sessionId, setSessionId] = useState(sessionIdProp || localStorage.getItem("session_id") || "");
+  const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
 
-  const askQuestion = async () => {
-    if (!sessionId) {
-      alert('No session detected. Upload files first.');
-      return;
-    }
+  useEffect(() => {
+    if (sessionIdProp) setSessionId(sessionIdProp);
+  }, [sessionIdProp]);
 
+  const ask = async (e) => {
+    e?.preventDefault?.();
+    setErr("");
+    if (!sessionId) return setErr("No session detected. Upload files first.");
+    if (!question.trim()) return;
+
+    const userMsg = { role: "user", text: question };
+    setMessages((m) => [...m, userMsg]);
+    setLoading(true);
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/ask`, {
+      const { data } = await axios.post(`${API_BASE}/api/ask`, {
         session_id: sessionId,
-        prompt: question,
+        question,
         project_name: projectName,
         email,
+        max_rows: 20,
       });
-
-      setMessages([...messages, { user: question, ai: response.data.answer }]);
-      setQuestion('');
-      setCount(count + 1);
-    } catch (error) {
-      console.error(error);
+      const aiMsg = { role: "assistant", text: data?.answer || "(no answer)" };
+      setMessages((m) => [...m, aiMsg]);
+      setCount((c) => c + 1);
+      setQuestion("");
+    } catch (e2) {
+      console.error(e2);
+      setErr("Failed to get answer.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const downloadPDF = async () => {
+  const clearQA = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/export`, {
-        params: {
-          session_id: sessionId,
-          email,
-          project_name: projectName
-        },
-        responseType: 'blob'
-      });
-
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${projectName || 'report'}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-    } catch (err) {
-      console.error(err);
+      await axios.post(`${API_BASE}/api/clear`, { session_id: sessionId });
+    } catch (_) {
+      // ignore
     }
-  };
-
-  const clearMessages = () => {
     setMessages([]);
     setCount(0);
   };
 
-  return (
-    <div>
-      <h3>💬 Q&A</h3>
-      <p>Questions asked: {count}</p>
-      <input
-        type="text"
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        placeholder="Ask something about your uploaded data..."
-      />
-      <button onClick={askQuestion}>Ask</button>
-      <button onClick={clearMessages}>Clear Q&A</button>
-      <button onClick={downloadPDF}>Download PDF</button>
+  const downloadPDF = async () => {
+    if (!sessionId) return setErr("No session detected. Upload files first.");
+    try {
+      const { data } = await axios.get(`${API_BASE}/api/export`, {
+        params: { session_id: sessionId, expires_in: 3600 },
+      });
+      if (data?.pdf_url) window.open(data.pdf_url, "_blank");
+      else setErr("Could not generate PDF.");
+    } catch (e) {
+      console.error(e);
+      setErr("PDF export failed.");
+    }
+  };
 
-      <div>
-        {messages.length === 0 && <p>No messages yet.</p>}
-        {messages.map((msg, idx) => (
-          <div key={idx} style={{ marginTop: '10px' }}>
-            <b>You:</b> {msg.user}<br />
-            <b>AI:</b> {msg.ai}
-          </div>
-        ))}
+  return (
+    <div style={{ marginTop: 20 }}>
+      <h3>💬 Q&A</h3>
+      <div style={{ fontWeight: "bold", marginBottom: 6 }}>Questions asked: {count}</div>
+      {sessionId ? (
+        <div style={{ fontSize: 12, color: "#666" }}>
+          Session: <code>{sessionId}</code>
+        </div>
+      ) : (
+        <div style={{ fontSize: 12, color: "#c00" }}>No session detected. Upload files first.</div>
+      )}
+      <form onSubmit={ask} style={{ marginTop: 8 }}>
+        <textarea
+          rows={3}
+          style={{ width: "100%", padding: 8 }}
+          placeholder="Ask something about your uploaded data..."
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          disabled={loading}
+        />
+        <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+          <button type="submit" disabled={loading || !sessionId}>
+            {loading ? "Thinking..." : "Ask"}
+          </button>
+          <button type="button" onClick={clearQA}>Clear Q&A</button>
+          <button type="button" onClick={downloadPDF}>Download PDF</button>
+        </div>
+      </form>
+      {err && <div style={{ color: "red", marginTop: 8 }}>{err}</div>}
+      <div style={{ marginTop: 12 }}>
+        {messages.length === 0 ? (
+          <p style={{ color: "#777" }}>No messages yet.</p>
+        ) : (
+          messages.map((m, i) => (
+            <div key={i} style={{ marginBottom: 10, background: m.role === "user" ? "#eef7ff" : "#f5f5f5", padding: 10, borderRadius: 6 }}>
+              <strong>{m.role === "user" ? "You" : "AI"}:</strong> {m.text}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
-};
-
-export default QAChat;
+}
