@@ -25,7 +25,6 @@ const UploadForm = ({ setSessionId, projectName, setProjectName, email, setEmail
 
   return (
     <div>
-      <h2>🧙‍♂️ Report Magician</h2>
       <label>Project Name</label>
       <input
         type="text"
