@@ -58,7 +58,6 @@ export default function UploadForm({ onSession }) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <h2>🧙‍♂️ Report Magician</h2>
       <form onSubmit={upload}>
         <div style={{ marginBottom: 8 }}>
           <label>Project Name</label>
