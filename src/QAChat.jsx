@@ -1,68 +1,108 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const QAChat = () => {
+const QAChat = ({ sessionId, projectName, email }) => {
+  const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
-  const [question, setQuestion] = useState('');
   const [questionCount, setQuestionCount] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  const sessionId = sessionStorage.getItem('session_id');
-  const projectName = sessionStorage.getItem('project_name');
-  const email = sessionStorage.getItem('email');
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-  const askQuestion = async () => {
-    if (!question.trim() || !sessionId) return;
+  const handleAsk = async () => {
+    if (!input.trim()) return;
+    if (!sessionId || !projectName || !email) {
+      alert('Please make sure project name, email, and session ID are set.');
+      return;
+    }
 
-    const payload = { question, session_id: sessionId };
-    const res = await axios.post('https://report-magician-backend.onrender.com/api/ask', payload);
-    const answer = res.data.answer;
+    const question = input.trim();
+    setMessages([...messages, { role: 'user', content: question }]);
+    setInput('');
+    setLoading(true);
 
-    setMessages([...messages, { question, answer }]);
-    setQuestion('');
-    setQuestionCount(prev => prev + 1);
+    try {
+      const response = await axios.post(`${apiBaseUrl}/api/ask`, {
+        session_id: sessionId,
+        project_name: projectName,
+        email,
+        question,
+      });
+
+      const answer = response.data.answer || 'No response';
+      setMessages((prev) => [...prev, { role: 'assistant', content: answer }]);
+      setQuestionCount((count) => count + 1);
+    } catch (error) {
+      console.error('Ask failed:', error);
+      setMessages((prev) => [...prev, { role: 'assistant', content: '❌ Error getting answer' }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const clearChat = () => {
+  const handleClear = () => {
     setMessages([]);
     setQuestionCount(0);
   };
 
-  const downloadPDF = async () => {
-    const res = await axios.get('https://report-magician-backend.onrender.com/api/export', {
-      params: { session_id: sessionId, email, project_name: projectName },
-      responseType: 'blob'
-    });
-    const url = window.URL.createObjectURL(new Blob([res.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'report.pdf');
-    document.body.appendChild(link);
-    link.click();
+  const handleDownloadPDF = async () => {
+    try {
+      const response = await axios.get(`${apiBaseUrl}/api/export`, {
+        params: {
+          session_id: sessionId,
+          project_name: projectName,
+          email,
+        },
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${projectName || 'report'}-Q&A.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('❌ Failed to download PDF');
+    }
   };
 
   return (
-    <div>
+    <div style={{ marginTop: '30px' }}>
       <h2>💬 Q&A</h2>
-      <p>Questions asked: {questionCount}</p>
-      {sessionId ? <p>Session: {sessionId}</p> : <p>No session detected. Upload files first.</p>}
+      <p><strong>Questions asked:</strong> {questionCount}</p>
+      <p><strong>Session:</strong> {sessionId || 'No session detected'}</p>
+
       <textarea
-        rows="3"
-        value={question}
-        onChange={e => setQuestion(e.target.value)}
+        rows={3}
         placeholder="Ask something about your uploaded data..."
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        style={{ width: '100%', marginBottom: '10px' }}
       />
-      <br />
-      <button onClick={askQuestion}>Ask</button>
-      <button onClick={clearChat}>Clear Q&A</button>
-      <button onClick={downloadPDF}>Download PDF</button>
-      <div>
-        {messages.map((msg, i) => (
-          <div key={i}>
-            <b>Q:</b> {msg.question}<br />
-            <b>A:</b> {msg.answer}
-          </div>
-        ))}
+
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+        <button onClick={handleAsk} disabled={loading || !input}>
+          {loading ? 'Asking...' : 'Ask'}
+        </button>
+        <button onClick={handleClear}>Clear Q&A</button>
+        <button onClick={handleDownloadPDF}>Download PDF</button>
       </div>
+
+      {messages.length === 0 ? (
+        <p>No messages yet.</p>
+      ) : (
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {messages.map((msg, i) => (
+            <li key={i} style={{ marginBottom: '10px' }}>
+              <strong>{msg.role === 'user' ? 'You' : 'AI'}:</strong> {msg.content}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
