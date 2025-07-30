@@ -21,6 +21,7 @@ const UploadForm = () => {
     }
     formData.append('project_name', projectName);
     formData.append('email', email);
+    formData.append("file", selectedFile);
 
     try {
       const res = await axios.post('https://report-magician-backend.onrender.com/api/upload', formData);
