@@ -42,7 +42,6 @@ const UploadForm = ({ onUploadSuccess, sessionId, setProjectName, setEmail }) =>
 
   return (
     <div style={{ marginBottom: '20px' }}>
-      <h2>🧙‍♂️ Report Magician</h2>
       <div>
         <label>Project Name</label><br />
         <input
