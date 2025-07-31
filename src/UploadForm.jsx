@@ -31,7 +31,6 @@ const UploadForm = ({ sessionId, setSessionId, email, setEmail, projectName, set
 
   return (
     <div>
-      <h2>🧙‍♂️ Report Magician</h2>
       <label>Project Name</label>
       <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="Enter a project name" />
       <br />
