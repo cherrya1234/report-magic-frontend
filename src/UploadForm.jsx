@@ -23,9 +23,9 @@ const UploadForm = ({ sessionId, projectName, email, setUploadStatus }) => {
     formData.append('email', email);
 
     try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/upload`, {
-    method: 'POST',
-    body: formData,
+    const response = await axios.post(
+    `${import.meta.env.VITE_API_BASE_URL}/api/upload`,
+    formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
       if (response.status === 200) {
