@@ -19,11 +19,13 @@ const UploadForm = ({ setSessionId, setProjectName, setEmail }) => {
     const formData = new FormData();
     formData.append('projectName', projectName);
     formData.append('email', email);
-    formData.append('file', selectedFile);
+    formData.append('file', file); // fixed
 
     try {
-      const response = await axios.post(`${VITE_API_BASE_URL}/api/upload`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      const response = await axios.post(`${apiBaseUrl}/api/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
       const { session_id } = response.data;
       setSessionId(session_id);
       setProjectName(projectName);
@@ -33,6 +35,7 @@ const UploadForm = ({ setSessionId, setProjectName, setEmail }) => {
     } catch (err) {
       console.error(err);
       setError('❌ Upload failed.');
+      setUploadStatus('');
     }
   };
 
@@ -62,3 +65,4 @@ const UploadForm = ({ setSessionId, setProjectName, setEmail }) => {
 };
 
 export default UploadForm;
+
