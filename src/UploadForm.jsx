@@ -19,10 +19,11 @@ const UploadForm = ({ setSessionId, setProjectName, setEmail }) => {
     const formData = new FormData();
     formData.append('projectName', projectName);
     formData.append('email', email);
-    formData.append('file', file);
+    formData.append('file', selectedFile);
 
     try {
-      const response = await axios.post(`${apiBaseUrl}/api/upload`, formData);
+      const response = await axios.post(`${VITE_API_BASE_URL}/api/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
       const { session_id } = response.data;
       setSessionId(session_id);
       setProjectName(projectName);
