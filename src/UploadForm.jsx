@@ -4,10 +4,10 @@ import axios from 'axios';
 const UploadForm = ({ sessionId, setSessionId, setProjectName, setEmail }) => {
   const [project, setProject] = useState('');
   const [userEmail, setUserEmail] = useState('');
-  const [files, setFiles] = useState([]); // allow selecting multiple files
+  const [files, setFiles] = useState([]);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
-  const [uploads, setUploads] = useState([]); // list of {name, key}
+  const [uploads, setUploads] = useState([]);
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -46,13 +46,11 @@ const UploadForm = ({ sessionId, setSessionId, setProjectName, setEmail }) => {
         return;
       }
 
-      // If we already have a sessionId, append files to it; else backend will create one on first file.
       let curSession = sessionId || null;
       const newUploads = [];
 
       for (const file of files) {
         const data = await uploadOne(file, curSession);
-        // For the very first file, capture new session_id from backend
         if (!curSession) {
           curSession = data.session_id;
           setSessionId(curSession);
@@ -138,38 +136,3 @@ const UploadForm = ({ sessionId, setSessionId, setProjectName, setEmail }) => {
 };
 
 export default UploadForm;
-src/App.jsx (wire session + pass to QA)
-jsx
-Copy
-import React, { useState } from 'react';
-import UploadForm from './UploadForm.jsx';
-import QAChat from './QAChat.jsx';
-
-const App = () => {
-  const [sessionId, setSessionId] = useState(null);
-  const [projectName, setProjectName] = useState('');
-  const [email, setEmail] = useState('');
-
-  return (
-    <div style={{ padding: 20, fontFamily: 'Arial, sans-serif' }}>
-      <h1>🧙‍♂️ Report Magician</h1>
-
-      <UploadForm
-        sessionId={sessionId}
-        setSessionId={setSessionId}
-        setProjectName={setProjectName}
-        setEmail={setEmail}
-      />
-
-      <QAChat
-        sessionId={sessionId}
-        projectName={projectName}
-        email={email}
-      />
-    </div>
-  );
-};
-
-export default App;
-
-
